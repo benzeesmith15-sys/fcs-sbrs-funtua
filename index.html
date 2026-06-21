@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCS SBRS FUNTUA</title>
+    <style>
+        :root {
+            --primary-color: #0033cc;
+            --accent-color: #2eb82e; 
+            --card-color: rgba(17, 17, 17, 0.65);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #050505;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #f0f0f0;
+            transition: background 0.3s ease;
+        }
+       
+        header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 2.5rem 1rem;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+            position: relative;
+        }
+       
+        /* Admin Only UI Controller Logic */
+        .admin-only { display: none !important; }
+        body.admin-mode .admin-only { display: flex !important; }
+        body.admin-mode button.admin-only, body.admin-mode div.admin-only { display: block !important; }
+
+        .controls-panel { position: absolute; top: 10px; right: 10px; display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.85); padding: 6px 12px; border-radius: 4px; border: 1px solid #444; z-index: 10; }
+        .controls-panel button { background: #222; color: #fff; border: 1px solid #555; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; border-radius: 4px; }
+        .controls-panel button:hover { background: var(--accent-color); }
+        .color-picker-wrapper { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #fff; }
+        .color-picker-wrapper input { border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; background: none; padding: 0; }
+
+        .logo-container { display: inline-block; position: relative; cursor: pointer; }
+        .logo { width: 110px; height: 110px; border-radius: 50%; box-shadow: 0 0 15px rgba(46, 184, 46, 0.6); object-fit: cover; display: block; margin: 0 auto 1rem; }
+
+        h1 { margin: 0; font-size: 1.8rem; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        h3 { margin: 5px 0 0; color: var(--accent-color); font-size: 1.2rem; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+       
+        nav {
+            background: rgba(17, 17, 17, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            padding: 0.8rem;
+            gap: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-wrap: wrap;
+        }
+        nav button { background: var(--primary-color); color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        nav button:hover { background: var(--accent-color); }
+       
+        .page { display: none; padding: 2rem; max-width: 900px; margin: 0 auto; min-height: 500px; }
+        .active-page { display: block; }
+       
+        .section-header-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; margin-bottom: 15px; }
+        .section-header-flex h2 { border-bottom: none; margin: 0; padding-bottom: 0; }
+       
+        h2 { border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; color: #fff; font-size: 1.4rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 15px; }
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-bottom: 1rem; }
+       
+        body.admin-mode [contenteditable="true"]:hover { background: rgba(255, 170, 0, 0.15); outline: 1px dashed #ffaa00; }
+        body.admin-mode [contenteditable="true"]:focus { background: rgba(255, 170, 0, 0.25); outline: 1px solid #ffaa00; }
+
+        .profile-card, .activity-card, .reader-card, .finance-card, .unit-item {
+            background: var(--card-color);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 15px;
+            transition: background 0.3s ease;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .profile-card { text-align: center; margin-bottom: 0; padding-top: 25px; }
+       
+        .avatar-container { width: 65px; height: 65px; margin: 0 auto 10px; position: relative; }
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); }
+        body.admin-mode .avatar-img { cursor: pointer; }
+        body.admin-mode .avatar-img:hover { border-color: var(--accent-color); filter: brightness(1.2); }
+
+        .role { font-size: 0.75rem; color: #eee; text-transform: uppercase; margin-bottom: 4px; font-weight: 600;}
+        .name { font-weight: bold; font-size: 0.85rem; color: #fff;}
+       
+        .unit-list { display: flex; flex-direction: column; gap: 10px; }
+        .unit-item {
+            margin-bottom: 0;
+            border-left: 3px solid var(--primary-color);
+            font-size: 1.05rem;
+            padding-right: 80px;
+        }
+       
+        .finance-card {
+            border-top: 3px solid var(--accent-color);
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .verse { font-style: italic; color: #ccc; margin-top: 15px; border-left: 2px solid var(--accent-color); padding-left: 10px; }
+       
+        .card-delete-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(200, 0, 0, 0.2);
+            color: #ff8888;
+            border: 1px solid rgba(200, 0, 0, 0.4);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: none;
+            z-index: 5;
+        }
+        body.admin-mode .card-delete-btn { display: block; }
+        .card-delete-btn:hover { background: rgba(255, 0, 0, 0.8); color: white; }
+
+        .add-btn { background: rgba(0,0,0,0.5); border: 2px dashed var(--accent-color); color: #fff; padding: 14px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; margin-bottom: 2rem; backdrop-filter: blur(5px); display: block; box-sizing: border-box; font-size: 0.95rem; text-shadow: 0 1px 2px #000; }
+        .add-btn:hover { background: rgba(46, 184, 46, 0.25); color: #fff; border-color: #fff; }
+
+        .inline-add-btn { background: var(--accent-color); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        .inline-add-btn:hover { opacity: 0.9; background: #fff; color: #000; }
+
+        .search-box { display: flex; gap: 8px; margin-bottom: 12px; }
+        .search-box input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid #555; padding: 8px; color: #fff; border-radius: 4px; }
+        .search-box button { background: var(--primary-color); color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .search-box button:hover { background: var(--accent-color); }
+
+        .display-screen { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 4px; font-size: 0.95rem; line-height: 1.5; max-height: 250px; overflow-y: auto; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.05); }
+
+        .flex-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .flex-container { grid-template-columns: 1fr; } }
+
+        footer { text-align: center; margin-top: 4rem; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
+        .reset-btn { background: #333; color: #888; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+        .reset-btn:hover { background: #cc0000; color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="controls-panel admin-only">
+            <div class="color-picker-wrapper">
+                <label for="primary-picker">Theme:</label>
+                <input type="color" id="primary-picker" value="#0033cc" onchange="updateThemeColor('--primary-color', this.value)">
+            </div>
+            <div class="color-picker-wrapper">
+                <label for="accent-picker">Lines:</label>
+                <input type="color" id="accent-picker" value="#2eb82e" onchange="updateThemeColor('--accent-color', this.value)">
+            </div>
+            <div class="color-picker-wrapper">
+                <label for="card-picker">Cards:</label>
+                <input type="color" id="card-picker" value="#111111" onchange="updateCardColor(this.value)">
+            </div>
+            <button onclick="document.getElementById('bg-input').click()">🖼️ Bg</button>
+            <button style="background: #555;" onclick="lockAdminMode()">🔒 Lock</button>
+        </div>
+       
+        <input type="file" id="logo-input" accept="image/*" style="display: none;" onchange="uploadImage(this, 'fcs_custom_logo', 'logo-img')">
+        <input type="file" id="bg-input" accept="image/*" style="display: none;" onchange="uploadBgImage(this)">
+       
+        <!-- Shared File Engine for Profile Cards -->
+        <input type="file" id="exco-img-uploader" accept="image/*" style="display: none;">
+
+        <div class="logo-container" id="logo-clickable-container" style="cursor: default;">
+            <img src="1992.png" id="logo-img" alt="FCS Logo" class="logo" onerror="this.src='https://via.placeholder.com/110/002288/fff?text=FCS+Logo'">
+        </div>
+        <h1 id="editable-title-1" data-save-id="main-title">FELLOWSHIP OF CHRISTIAN STUDENTS</h1>
+        <h3 id="editable-title-2" data-save-id="sub-title">FCS SBRS FUNTUA</h3>
+    </header>
+
+    <nav>
+        <button onclick="showPage('home')">Home / Excos</button>
+        <button onclick="showPage('units')">Fellowship Units</button>
+        <button onclick="showPage('activities')">Activities & Devotion</button>
+        <button onclick="showPage('finance')">Giving & Finance</button>
+    </nav>
+
+    <div id="home" class="page active-page">
+        <h2>Leadership Profiles</h2>
+        <div class="icon-grid" id="lead-profiles-grid">
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p1')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p1" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-1">Patron</div>
+                <div class="name" data-save-id="patron">Dr. Jalija</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p2')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p2" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-2">President</div>
+                <div class="name" data-save-id="pres">Victor Abel</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p3')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p3" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-3">Vice President</div>
+                <div class="name" data-save-id="vp">Elizabeth</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p4')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p4" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-4">O.G.S</div>
+                <div class="name" data-save-id="ogs">John Edebo</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p5')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p5" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-5">Gen. Sec</div>
+                <div class="name" data-save-id="gensec">[Tap to change]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p6')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p6" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-6">Prayer Sec</div>
+                <div class="name" data-save-id="praysec">[Tap to change]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p7')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p7" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-7">Bible Study Sec</div>
+                <div class="name" data-save-id="biblesec">[Tap to change]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'p8')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="p8" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="p-role-8">Treasurer</div>
+                <div class="name" data-save-id="treasurer">[Tap to change]</div>
+            </div>
+        </div>
+        <button class="add-btn admin-only" id="add-lead-btn">+ Add Leadership Profile Slot</button>
+
+        <h2>General Excos</h2>
+        <div class="icon-grid" id="general-excos-grid">
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex1')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex1" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex1-role">Exco 1</div>
+                <div class="name" data-save-id="ex1-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex2')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex2" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex2-role">Exco 2</div>
+                <div class="name" data-save-id="ex2-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex3')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex3" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex3-role">Exco 3</div>
+                <div class="name" data-save-id="ex3-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex4')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex4" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex4-role">Exco 4</div>
+                <div class="name" data-save-id="ex4-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex5')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex5" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex5-role">Exco 5</div>
+                <div class="name" data-save-id="ex5-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex6')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex6" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex6-role">Exco 6</div>
+                <div class="name" data-save-id="ex6-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex7')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex7" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex7-role">Exco 7</div>
+                <div class="name" data-save-id="ex7-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex8')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex8" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex8-role">Exco 8</div>
+                <div class="name" data-save-id="ex8-name">[Name]</div>
+            </div>
+            <div class="profile-card">
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, 'ex9')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="ex9" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="ex9-role">Exco 9</div>
+                <div class="name" data-save-id="ex9-name">[Name]</div>
+            </div>
+        </div>
+        <button class="add-btn admin-only" id="add-general-btn">+ Add General Exco Slot</button>
+    </div>
+
+    <div id="units" class="page">
+        <div class="section-header-flex">
+            <h2>Our Working Units</h2>
+            <button class="inline-add-btn admin-only" id="add-unit-inline-btn">+ Add Unit</button>
+        </div>
+        <div class="unit-list" id="units-list-container">
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u1')">❌ Remove</button>
+                <span data-save-id="u-item-1"><strong>1. Choir Unit</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u2')">❌ Remove</button>
+                <span data-save-id="u-item-2"><strong>2. Technical Unit</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u3')">❌ Remove</button>
+                <span data-save-id="u-item-3"><strong>3. Media Unit</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u4')">❌ Remove</button>
+                <span data-save-id="u-item-4"><strong>4. Ushers</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u5')">❌ Remove</button>
+                <span data-save-id="u-item-5"><strong>5. Bible Study Unit</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u6')">❌ Remove</button>
+                <span data-save-id="u-item-6"><strong>6. Prayer Unit</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u7')">❌ Remove</button>
+                <span data-save-id="u-item-7"><strong>7. Drama Unit</strong></span>
+            </div>
+            <div class="unit-item">
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, 'u8')">❌ Remove</button>
+                <span data-save-id="u-item-8"><strong>8. Welfare</strong></span>
+            </div>
+        </div>
+        <button class="add-btn admin-only" id="add-unit-btn">+ Add New Fellowship Unit</button>
+    </div>
+
+    <div id="activities" class="page">
+        <div class="flex-container">
+            <div>
+                <h2>Fellowship Activities</h2>
+                <div id="activities-list-container">
+                    <div class="activity-card">
+                        <button class="card-delete-btn" onclick="removeItemCard('activity', 'default', this.parentElement)">❌ Remove</button>
+                        <h3 style="margin: 0; color:#fff;" data-save-id="act-t-default">Sunday General Service</h3>
+                        <p style="margin: 5px 0; font-size:0.85rem; color:var(--accent-color);" data-save-id="act-d-default">Time: 4:00 PM | Venue: Assembly Hall</p>
+                        <p style="margin: 5px 0 0 0;" data-save-id="act-b-default">Join us as we gather for deep praise, worship, and the word.</p>
+                    </div>
+                </div>
+                <button class="add-btn admin-only" id="add-activity-btn">+ Add New Fellowship Activity</button>
+            </div>
+
+            <div>
+                <div class="section-header-flex">
+                    <h2>Fellowship Books</h2>
+                    <button class="inline-add-btn admin-only" id="add-book-inline-btn">+ Add Book</button>
+                </div>
+               
+                <div id="books-list-container">
+                    <div class="reader-card" style="border-top: 3px solid var(--primary-color);">
+                        <h3 style="margin-top: 0; color:#fff;">📖 Holy Bible (KJV)</h3>
+                        <div class="search-box">
+                            <input type="text" id="bible-search-input" placeholder="e.g. John 3:16 or Romans 8:1-5">
+                            <button onclick="lookupScripture()">Search</button>
+                        </div>
+                        <div class="display-screen" id="bible-display">Enter a scripture reference above to view the Bible text here...</div>
+                    </div>
+
+                    <div class="reader-card" style="border-top: 3px solid var(--accent-color);">
+                        <h3 style="margin-top: 0; color:#fff;">🎶 Sacred Songs & Solos</h3>
+                        <div class="search-box">
+                            <input type="number" id="hymn-search-input" placeholder="Enter Hymn Number (e.g. 1, 23, 45)">
+                            <button onclick="lookupHymn()">Open</button>
+                        </div>
+                        <div class="display-screen" id="hymn-display">Enter a hymn number to show lyrics from Sacred Songs and Solos here...</div>
+                    </div>
+                </div>
+                <button class="add-btn admin-only" id="add-book-btn">+ Add New Fellowship Book</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="finance" class="page">
+        <h2>Finance & Contributions</h2>
+        <div id="finance-list-container">
+            <div class="finance-card">
+                <button class="card-delete-btn" onclick="removeItemCard('account', 'main', this.parentElement)">❌ Delete</button>
+                <h3 style="margin-top: 0;" data-save-id="main-fin-title">Offering & Tithe Account</h3>
+                <p><strong>Bank:</strong> <span data-save-id="bank-name">MONIEPOINT</span></p>
+                <p><strong>Account Name:</strong> <span data-save-id="acc-name">VICTOR ABEL</span></p>
+                <p><strong>Account No:</strong> <span data-save-id="acc-num">527821282</span></p>
+                <div class="verse" data-save-id="fin-verse">"Every man according as he purposeth in his heart..." <br><strong>— 2 Cor 9:7</strong></div>
+            </div>
+
+            <div class="finance-card">
+                <button class="card-delete-btn" onclick="removeItemCard('account', 'welfare', this.parentElement)">❌ Delete</button>
+                <h3 style="margin-top: 0;" data-save-id="welfare-fin-title">WELFARE Account</h3>
+                <p><strong>Bank:</strong> <span data-save-id="welfare-bank-name">[Welfare Bank Name]</span></p>
+                <p><strong>Account Name:</strong> <span data-save-id="welfare-acc-name">[Welfare Account Name]</span></p>
+                <p><strong>Account No:</strong> <span data-save-id="welfare-acc-num">[0000000000]</span></p>
+                <div class="verse" data-save-id="welfare-fin-verse">"He that hath pity upon the poor lendeth unto the Lord..." <br><strong>— Proverbs 19:17</strong></div>
+            </div>
+        </div>
+        <button class="add-btn admin-only" id="add-account-btn">+ Add Alternative Account Details</button>
+    </div>
+
+    <footer class="admin-only">
+        <button class="reset-btn" onclick="clearAllEdits()">Reset Page to Default Settings</button>
+    </footer>
+
+    <script>
+        const SECRET_KEY_CODE = "fcs1992";
+        let currentActiveImgTarget = null;
+
+        function checkAdminSession() {
+            if (localStorage.getItem("fcs_admin_session") === "authenticated") {
+                activateAdminView();
+            } else {
+                deactivateAdminView();
+            }
+        }
+
+        function activateAdminView() {
+            document.body.classList.add("admin-mode");
+            document.querySelectorAll("[data-save-id]").forEach(el => {
+                el.setAttribute("contenteditable", "true");
+            });
+            document.getElementById("logo-clickable-container").onclick = function() {
+                document.getElementById("logo-input").click();
+            };
+            document.getElementById("logo-clickable-container").style.cursor = "pointer";
+
+            setupImageClickHandlers();
+        }
+
+        function setupImageClickHandlers() {
+            document.querySelectorAll(".avatar-img").forEach(img => {
+                img.onclick = function() {
+                    currentActiveImgTarget = this.getAttribute("data-img-id");
+                    document.getElementById("exco-img-uploader").click();
+                };
+            });
+        }
+
+        function deactivateAdminView() {
+            document.body.classList.remove("admin-mode");
+            document.querySelectorAll("[data-save-id]").forEach(el => {
+                el.removeAttribute("contenteditable");
+            });
+            document.getElementById("logo-clickable-container").onclick = null;
+            document.getElementById("logo-clickable-container").style.cursor = "default";
+            document.querySelectorAll(".avatar-img").forEach(img => { img.onclick = null; });
+        }
+
+        function lockAdminMode() {
+            localStorage.removeItem("fcs_admin_session");
+            deactivateAdminView();
+            alert("Editor tools successfully locked.");
+        }
+
+        window.addEventListener("keydown", function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "e") {
+                e.preventDefault();
+                const pass = prompt("Enter secret administrator password to display customization tools:");
+                if (pass === SECRET_KEY_CODE) {
+                    localStorage.setItem("fcs_admin_session", "authenticated");
+                    activateAdminView();
+                    alert("Editor mode activated successfully!");
+                } else if (pass !== null) {
+                    alert("Invalid password.");
+                }
+            }
+        });
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active-page'));
+            document.getElementById(pageId).classList.add('active-page');
+        }
+
+        function uploadImage(input, storageKey, elementId) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem(storageKey, e.target.result);
+                    document.getElementById(elementId).src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll("[data-save-id]").forEach(element => { setupTracking(element); });
+
+            // Load added items maps
+            const savedLeadProfiles = JSON.parse(localStorage.getItem("fcs_added_lead_profiles") || "[]");
+            savedLeadProfiles.forEach(id => createNewProfileCardElement('lead-profiles-grid', id));
+
+            const savedGenExcos = JSON.parse(localStorage.getItem("fcs_added_gen_excos") || "[]");
+            savedGenExcos.forEach(id => createNewProfileCardElement('general-excos-grid', id));
+
+            const savedUnits = JSON.parse(localStorage.getItem("fcs_added_units") || "[]");
+            savedUnits.forEach(id => createNewUnitElement(id));
+
+            document.querySelectorAll(".avatar-img").forEach(img => {
+                let id = img.getAttribute("data-img-id");
+                let savedImg = localStorage.getItem("fcs_exco_img_" + id);
+                if(savedImg) { img.src = savedImg; }
+            });
+
+            document.getElementById("exco-img-uploader").addEventListener("change", function() {
+                const file = this.files[0];
+                if (file && currentActiveImgTarget) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        localStorage.setItem("fcs_exco_img_" + currentActiveImgTarget, e.target.result);
+                        document.querySelector(`[data-img-id="${currentActiveImgTarget}"]`).src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Handle standard list drops checks
+            const removedItems = JSON.parse(localStorage.getItem("fcs_removed_default_elements") || "[]");
+            removedItems.forEach(id => {
+                const targetEl = document.querySelector(`[data-save-id="${id}"]`);
+                if(targetEl) {
+                    const card = targetEl.closest('.profile-card, .unit-item, .activity-card, .finance-card');
+                    if(card) card.remove();
+                }
+            });
+
+            const savedPrimary = localStorage.getItem("fcs_color_primary") || "#0033cc";
+            const savedAccent = localStorage.getItem("fcs_color_accent") || "#2eb82e";
+            const savedCardHex = localStorage.getItem("fcs_color_card_hex") || "#111111";
+           
+            document.documentElement.style.setProperty('--primary-color', savedPrimary);
+            document.documentElement.style.setProperty('--accent-color', savedAccent);
+            document.getElementById("primary-picker").value = savedPrimary;
+            document.getElementById("accent-picker").value = savedAccent;
+            document.getElementById("card-picker").value = savedCardHex;
+            applyCardOpacity(savedCardHex);
+
+            if (localStorage.getItem("fcs_custom_logo")) { document.getElementById("logo-img").src = localStorage.getItem("fcs_custom_logo"); }
+            if (localStorage.getItem("fcs_custom_bg")) { applyBlurredBackground(localStorage.getItem("fcs_custom_bg")); }
+
+            const savedAccounts = JSON.parse(localStorage.getItem("fcs_account_indices") || "[]");
+            savedAccounts.forEach(idx => createNewAccountCard(idx));
+
+            const savedActivities = JSON.parse(localStorage.getItem("fcs_activity_indices") || "[]");
+            savedActivities.forEach(idx => createNewActivityCard(idx));
+
+            const savedBooks = JSON.parse(localStorage.getItem("fcs_book_indices") || "[]");
+            savedBooks.forEach(idx => createNewBookCard(idx));
+
+            // Setup programmatic clicks layout adjustments
+            document.getElementById("add-lead-btn").addEventListener("click", () => {
+                let id = "cust-lead-" + Date.now();
+                let list = JSON.parse(localStorage.getItem("fcs_added_lead_profiles") || "[]");
+                list.push(id);
+                localStorage.setItem("fcs_added_lead_profiles", JSON.stringify(list));
+                createNewProfileCardElement('lead-profiles-grid', id);
+            });
+
+            document.getElementById("add-general-btn").addEventListener("click", () => {
+                let id = "cust-gen-" + Date.now();
+                let list = JSON.parse(localStorage.getItem("fcs_added_gen_excos") || "[]");
+                list.push(id);
+                localStorage.setItem("fcs_added_gen_excos", JSON.stringify(list));
+                createNewProfileCardElement('general-excos-grid', id);
+            });
+
+            const addUnitAction = () => {
+                let id = "cust-unit-" + Date.now();
+                let list = JSON.parse(localStorage.getItem("fcs_added_units") || "[]");
+                list.push(id);
+                localStorage.setItem("fcs_added_units", JSON.stringify(list));
+                createNewUnitElement(id);
+            };
+            document.getElementById("add-unit-btn").addEventListener("click", addUnitAction);
+            document.getElementById("add-unit-inline-btn").addEventListener("click", addUnitAction);
+
+            document.getElementById("add-account-btn").addEventListener("click", () => {
+                let list = JSON.parse(localStorage.getItem("fcs_account_indices") || "[]");
+                let newIdx = list.length > 0 ? Math.max(...list) + 1 : 1;
+                list.push(newIdx);
+                localStorage.setItem("fcs_account_indices", JSON.stringify(list));
+                createNewAccountCard(newIdx);
+            });
+
+            document.getElementById("add-activity-btn").addEventListener("click", () => {
+                let list = JSON.parse(localStorage.getItem("fcs_activity_indices") || "[]");
+                let newIdx = list.length > 0 ? Math.max(...list) + 1 : 1;
+                list.push(newIdx);
+                localStorage.setItem("fcs_activity_indices", JSON.stringify(list));
+                createNewActivityCard(newIdx);
+            });
+
+            const addBookAction = () => {
+                let list = JSON.parse(localStorage.getItem("fcs_book_indices") || "[]");
+                let newIdx = list.length > 0 ? Math.max(...list) + 1 : 1;
+                list.push(newIdx);
+                localStorage.setItem("fcs_book_indices", JSON.stringify(list));
+                createNewBookCard(newIdx);
+            };
+            document.getElementById("add-book-btn").addEventListener("click", addBookAction);
+            document.getElementById("add-book-inline-btn").addEventListener("click", addBookAction);
+
+            checkAdminSession();
+        });
+
+        // Mistake Management Actions Logic
+        function removeProfileCard(cardEl, id) {
+            if(confirm("Permanently erase this individual profile card option?")) {
+                let listLead = JSON.parse(localStorage.getItem("fcs_added_lead_profiles") || "[]");
+                listLead = listLead.filter(item => item !== id);
+                localStorage.setItem("fcs_added_lead_profiles", JSON.stringify(listLead));
+
+                let listGen = JSON.parse(localStorage.getItem("fcs_added_gen_excos") || "[]");
+                listGen = listGen.filter(item => item !== id);
+                localStorage.setItem("fcs_added_gen_excos", JSON.stringify(listGen));
+
+                // Mark fallback tracking
+                registerDefaultDeleted(cardEl);
+                localStorage.removeItem("fcs_exco_img_" + id);
+                cardEl.remove();
+            }
+        }
+
+        function removeUnitItem(cardEl, id) {
+            if(confirm("Remove this selected fellowship unit completely?")) {
+                let list = JSON.parse(localStorage.getItem("fcs_added_units") || "[]");
+                list = list.filter(item => item !== id);
+                localStorage.setItem("fcs_added_units", JSON.stringify(list));
+
+                registerDefaultDeleted(cardEl);
+                cardEl.remove();
+            }
+        }
+
+        function registerDefaultDeleted(parentElement) {
+            let savedIds = [];
+            parentElement.querySelectorAll("[data-save-id]").forEach(el => {
+                savedIds.push(el.getAttribute("data-save-id"));
+                localStorage.removeItem("fcs_" + el.getAttribute("data-save-id"));
+            });
+            let removedDefaults = JSON.parse(localStorage.getItem("fcs_removed_default_elements") || "[]");
+            removedDefaults.push(...savedIds);
+            localStorage.setItem("fcs_removed_default_elements", JSON.stringify(removedDefaults));
+        }
+
+        function createNewProfileCardElement(targetGridId, id) {
+            const card = document.createElement("div");
+            card.className = "profile-card";
+            card.innerHTML = `
+                <button class="card-delete-btn" onclick="removeProfileCard(this.parentElement, '${id}')">❌ Remove</button>
+                <div class="avatar-container"><img src="" class="avatar-img" data-img-id="${id}" onerror="this.src='https://via.placeholder.com/65/222/fff?text=👤'"></div>
+                <div class="role" data-save-id="role-${id}">[Edit Role]</div>
+                <div class="name" data-save-id="name-${id}">[Edit Name]</div>
+            `;
+            document.getElementById(targetGridId).appendChild(card);
+            if(localStorage.getItem("fcs_admin_session") === "authenticated") {
+                card.querySelectorAll("[data-save-id]").forEach(el => el.setAttribute("contenteditable", "true"));
+            }
+            card.querySelectorAll("[data-save-id]").forEach(element => { setupTracking(element); });
+            setupImageClickHandlers();
+            let savedImg = localStorage.getItem("fcs_exco_img_" + id);
+            if(savedImg) { card.querySelector(".avatar-img").src = savedImg; }
+        }
+
+        function createNewUnitElement(id) {
+            const item = document.createElement("div");
+            item.className = "unit-item";
+            item.innerHTML = `
+                <button class="card-delete-btn" onclick="removeUnitItem(this.parentElement, '${id}')">❌ Remove</button>
+                <span data-save-id="unit-text-${id}"><strong>New Fellowship Unit Item Details</strong></span>
+            `;
+            document.getElementById("units-list-container").appendChild(item);
+            if(localStorage.getItem("fcs_admin_session") === "authenticated") {
+                item.querySelectorAll("[data-save-id]").forEach(el => el.setAttribute("contenteditable", "true"));
+            }
+            item.querySelectorAll("[data-save-id]").forEach(element => { setupTracking(element); });
+        }
+
+        function lookupScripture() {
+            const query = document.getElementById("bible-search-input").value.trim();
+            const display = document.getElementById("bible-display");
+            if(!query) return;
+           
+            display.innerText = "Searching the scriptures...";
+            fetch(`https://labs.bible.org/api/?passage=${encodeURIComponent(query)}&type=json`)
+                .then(res => res.json())
+                .then(data => {
+                    if(!data || data.length === 0) {
+                        display.innerText = "Scripture text not found. Check spelling (e.g., John 3:16).";
+                        return;
+                    }
+                    let output = "";
+                    data.forEach(v => { output += `<strong>${v.chapter}:${v.verse}</strong> ${v.text}\n\n`; });
+                    display.innerHTML = `<strong>${data[0].bookname}</strong><br><br>` + output;
+                })
+                .catch(() => { display.innerText = "Could not fetch scripture. Make sure you are connected to the internet."; });
+        }
+
+        function lookupHymn() {
+            const num = document.getElementById("hymn-search-input").value.trim();
+            const display = document.getElementById("hymn-display");
+            if(!num) return;
+
+            display.innerText = "Loading hymn lines...";
+            const SSandS = {
+                "1": { title: "Hold the Fort", lyrics: "Ho, my comrades! see the signal\nWaving in the sky!..." },
+                "23": { title: "The Great Physician", lyrics: "The great Physician now is near..." },
+                "42": { title: "Amazing Grace", lyrics: "Amazing grace! how sweet the sound..." }
+            };
+
+            if(SSandS[num]) {
+                display.innerHTML = `<strong>Hymn ${num}: ${SSandS[num].title}</strong><br><br>${SSandS[num].lyrics}`;
+            } else {
+                display.innerHTML = `<strong>Hymn ${num} Selected</strong><br><br>[Lyrics placeholder]\n\n(Tip: Tap this box directly to type or paste custom lyrics!)`;
+            }
+        }
+
+        function lookupCustomBook(index) {
+            const val = document.getElementById(`custom-input-${index}`).value.trim();
+            const disp = document.getElementById(`custom-display-${index}`);
+            disp.innerHTML = `<strong>Item "${val}" Loaded</strong><br><br>[Custom book viewer display pane. Click to overwrite contents.]`;
+            localStorage.setItem("fcs_bk-disp-" + index, disp.innerHTML);
+        }
+
+        function setupTracking(element) {
+            const id = element.getAttribute("data-save-id");
+            const savedValue = localStorage.getItem("fcs_" + id);
+            if (savedValue !== null) { element.innerHTML = savedValue; }
+            element.addEventListener("input", () => { localStorage.setItem("fcs_" + id, element.innerHTML); });
+        }
+
+        function updateThemeColor(variableName, hexColor) {
+            document.documentElement.style.setProperty(variableName, hexColor);
+            localStorage.setItem(variableName === '--primary-color' ? "fcs_color_primary" : "fcs_color_accent", hexColor);
+        }
+
+        function updateCardColor(hexColor) {
+            localStorage.setItem("fcs_color_card_hex", hexColor);
+            applyCardOpacity(hexColor);
+        }
+
+        function applyCardOpacity(hexColor) {
+            let r = parseInt(hexColor.slice(1, 3), 16), g = parseInt(hexColor.slice(3, 5), 16), b = parseInt(hexColor.slice(5, 7), 16);
+            document.documentElement.style.setProperty('--card-color', `rgba(${r}, ${g}, ${b}, 0.65)`);
+        }
+
+        function uploadBgImage(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem("fcs_custom_bg", e.target.result);
+                    applyBlurredBackground(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+       
+        function applyBlurredBackground(imageData) {
+            document.body.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('${imageData}')`;
+            document.body.style.backdropFilter = "blur(20px)";
+            document.body.style.webkitBackdropFilter = "blur(20px)";
+        }
+
+        function removeItemCard(type, index, domElement) {
+            if(confirm("Delete this card element permanently?")) {
+                let storageKey = `fcs_${type}_indices`;
+                let list = JSON.parse(localStorage.getItem(storageKey) || "[]");
+                list = list.filter(item => item !== index);
+                localStorage.setItem(storageKey, JSON.stringify(list));
+               
+                if(type === 'account') {
+                    localStorage.removeItem(`fcs_extra-bank-${index}`);
+                    localStorage.removeItem(`fcs_extra-name-${index}`);
+                    localStorage.removeItem(`fcs_extra-num-${index}`);
+                    localStorage.removeItem(`fcs_extra-verse-${index}`);
+                } else if(type === 'activity') {
+                    localStorage.removeItem(`fcs_act-t-${index}`);
+                    localStorage.removeItem(`fcs_act-d-${index}`);
+                    localStorage.removeItem(`fcs_act-b-${index}`);
+                } else if(type === 'book') {
+                    localStorage.removeItem(`fcs_bk-title-${index}`);
+                    localStorage.removeItem(`fcs_bk-disp-${index}`);
+                }
+                domElement.remove();
+            }
+        }
+
+        function createNewAccountCard(index) {
+            const card = document.createElement("div");
+            card.className = "finance-card";
+            card.innerHTML = `
+                <button class="card-delete-btn" onclick="removeItemCard('account', ${index}, this.parentElement)">❌ Delete</button>
+                <h3 style="margin-top: 0;">Alternative Account Details</h3>
+                <p><strong>Bank:</strong> <span data-save-id="extra-bank-${index}">[Bank Name]</span></p>
+                <p><strong>Account Name:</strong> <span data-save-id="extra-name-${index}">[Account Name]</span></p>
+                <p><strong>Account No:</strong> <span data-save-id="extra-num-${index}">[0000000000]</span></p>
+                <div class="verse" data-save-id="extra-verse-${index}">"Give, and it shall be given unto you..." <br><strong>— Luke 6:38</strong></div>
+            `;
+            document.getElementById("finance-list-container").appendChild(card);
+            if(localStorage.getItem("fcs_admin_session") === "authenticated") {
+                card.querySelectorAll("[data-save-id]").forEach(el => el.setAttribute("contenteditable", "true"));
+            }
+            card.querySelectorAll("[data-save-id]").forEach(element => { setupTracking(element); });
+        }
+
+        function createNewActivityCard(index) {
+            const card = document.createElement("div");
+            card.className = "activity-card";
+            card.innerHTML = `
+                <button class="card-delete-btn" onclick="removeItemCard('activity', ${index}, this.parentElement)">❌ Remove</button>
+                <h3 style="margin: 0; color:#fff;" data-save-id="act-t-${index}">[New Activity Title]</h3>
+                <p style="margin: 5px 0; font-size:0.85rem; color:var(--accent-color);" data-save-id="act-d-${index}">Time: --:-- | Venue: ---</p>
+                <p style="margin: 5px 0 0 0;" data-save-id="act-b-${index}">[Tap here to edit details for this fellowship event]</p>
+            `;
+            document.getElementById("activities-list-container").appendChild(card);
+            if(localStorage.getItem("fcs_admin_session") === "authenticated") {
+                card.querySelectorAll("[data-save-id]").forEach(el => el.setAttribute("contenteditable", "true"));
+            }
+            card.querySelectorAll("[data-save-id]").forEach(element => { setupTracking(element); });
+        }
+
+        function createNewBookCard(index) {
+            const card = document.createElement("div");
+            card.className = "reader-card";
+            card.style.borderTop = "3px solid #ffaa00";
+            card.innerHTML = `
+                <button class="card-delete-btn" onclick="removeItemCard('book', ${index}, this.parentElement)">❌ Close Book</button>
+                <h3 style="margin-top: 0; color:#fff;" data-save-id="bk-title-${index}">📚 Custom Book Title</h3>
+                <div class="search-box">
+                    <input type="text" id="custom-input-${index}" placeholder="Enter Topic / No.">
+                    <button onclick="lookupCustomBook(${index})">Open</button>
+                </div>
+                <div class="display-screen" id="custom-display-${index}" data-save-id="bk-disp-${index}">Type reference, hit Open, or edit directly here...</div>
+            `;
+            document.getElementById("books-list-container").appendChild(card);
+            if(localStorage.getItem("fcs_admin_session") === "authenticated") {
+                card.querySelectorAll("[data-save-id]").forEach(el => el.setAttribute("contenteditable", "true"));
+            }
+            card.querySelectorAll("[data-save-id]").forEach(element => { setupTracking(element); });
+        }
+
+        function clearAllEdits() {
+            if (confirm("Are you sure you want to wipe out all data, uploaded background layouts, card selections, and reset to standard view parameters?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
